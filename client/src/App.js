@@ -6,6 +6,7 @@ import Login from './components/login';
 import Signup from './components/signup';
 import Dashboard from './components/dashboard';
 import { UserContext } from './components/userContext';
+import PatientDashboard from './components/PatientDashboard';
 
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/dashboard" element={<Login />} />
+            <Route path="/patient" element = {< PatientDashboard/>} />
             </>
             
             }
