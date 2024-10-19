@@ -3,9 +3,9 @@ import { useState } from 'react';
 import axios from 'axios';
 import {toast} from 'react-hot-toast';
 import '../css/homeStyle.css'; 
+import ToggleSwitch from "./toggleSwitch";
 
 export const Signup = () => {
-
     const navigate = useNavigate();
 
     // State to store form data for signup
@@ -16,6 +16,7 @@ export const Signup = () => {
         password: '',
     });
 
+    const [isDoctor, setIsDoctor] = useState(false);
 
     // Function to handle user signup
     const registerUser = async (e) => {
@@ -56,6 +57,7 @@ export const Signup = () => {
             <div className="w-[420px] flex flex-col gap-5">
                 <p className="mt-[-25px] text-[25px] font-semibold text-left">Sign Up</p>
                 <p className="mt-[-15px] text-gray-500 text-left">to continue using Care Exchange!</p>
+                <ToggleSwitch isDoctor={isDoctor} setIsDoctor={setIsDoctor} />
                 <form className="flex-col flex justify-center text-center gap-5" onSubmit={registerUser}>
                     <div className="flex flex-row justify-between">
                         <div className="flex flex-col gap-5">
