@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Link } from 'react-router-dom';
 import waveLogo from '../images/goodbye.png';
 import calendarImg from '../images/heartPic.png';
@@ -6,8 +6,11 @@ import '../css/homeStyle.css';
 import smallHeart from '../images/smallheart.png';
 import communicationPic from '../images/message.png';
 import databasePic from '../images/databasePic.png';
+import { UserContext } from './userContext';
 
 export const Home = () => {
+  const {user} = useContext(UserContext);
+  console.log(user);
   return (
     <div className="flex-col">
 
