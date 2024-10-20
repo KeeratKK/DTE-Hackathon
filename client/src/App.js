@@ -6,7 +6,8 @@ import Login from './components/login';
 import Signup from './components/signup';
 import Dashboard from './components/dashboard';
 import { UserContext } from './components/userContext';
-
+import PatientDashboard from './components/patient';
+import DoctorDashboard from './components/doctor'
 
 function App() {
 
@@ -26,7 +27,7 @@ function App() {
             <>
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-            <Route path="/dashboard" element={<Login />} />
+            <Route path="/doctor" element={<DoctorDashboard/>} />
             </>
             
             }
