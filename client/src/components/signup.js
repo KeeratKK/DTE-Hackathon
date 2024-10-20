@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom"
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
 import {toast} from 'react-hot-toast';
 import '../css/homeStyle.css'; 
@@ -7,24 +7,31 @@ import ToggleSwitch from "./toggleSwitch";
 
 export const Signup = () => {
     const navigate = useNavigate();
+    const [isDoctor, setIsDoctor] = useState(false);
 
-    // State to store form data for signup
     const [data, setData] = useState({
         first_name: '',
         last_name: '',
         email: '',
         password: '',
+        role: ''
     });
 
-    const [isDoctor, setIsDoctor] = useState(false);
+    useEffect(() => {
+        setData(prevData => ({
+            ...prevData,
+            role: isDoctor ? "Doctor" : "Patient"
+        }));
+    }, [isDoctor]);
 
-    // Function to handle user signup
+    console.log(data);
+
     const registerUser = async (e) => {
         e.preventDefault();
-        const {first_name, last_name, email, password} = data;
+        const {first_name, last_name, email, password, role} = data;
         try{
-            const {data} = await axios.post('/signup', {
-                first_name, last_name, email, password
+            const {data} = await axios.post('http://localhost:5000/signup', {
+                first_name, last_name, email, password, role
             });
             if(data.error){
                 toast.error(data.error)
@@ -38,6 +45,7 @@ export const Signup = () => {
             console.log(error.response);
         }
     }
+
 
     return(
         <div className="flex justify-center items-center mt-[75px] text-black">

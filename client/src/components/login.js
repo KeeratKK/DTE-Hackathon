@@ -12,12 +12,7 @@ export const Login = () => {
         email: '',
         password: '',
     });
-    // State to hold the email and password input values
 
-
-
-
-    // Function to handle user login
     const loginUser = async (e) => {
         e.preventDefault();
         const { email, password } = data;
@@ -38,7 +33,6 @@ export const Login = () => {
             toast.error("An error occurred during login. Please try again.");
         }
     };
-    
     
 
     return(
