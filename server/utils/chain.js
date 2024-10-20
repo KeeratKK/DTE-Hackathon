@@ -13,7 +13,7 @@ dotenv.config();
 
 async function initChain() {
 
-    const collection = process.env.MONGO_ATLAS_COLLECTION;
+    const collection = mongoose.connection.collection(process.env.MONGO_ATLAS_COLLECTION);
 
     if(!collection) {
         throw new Error("Missing Collection in Environment Variables");
@@ -27,6 +27,13 @@ async function initChain() {
     });
 
     const retriever = vectorStore.asRetriever();
+
+    // const retrievedResults = await retriever._getRelevantDocuments("How do I create an FHIR object for resource type Condition?");
+    // const documents = retrievedResults.map((documents => ({
+    //     pageContent: documents.pageContent,
+    //     pageNumber: documents.metadata.loc.pageNumber,
+    //   })));
+    // console.log(JSON.stringify(documents));
 
     return retriever;
 

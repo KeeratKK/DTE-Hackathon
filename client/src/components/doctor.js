@@ -7,9 +7,8 @@ const DoctorDashboard = () => {
     const [selectedPatient, setSelectedPatient] = useState(null);
     const [viewedDoc, setViewedDoc] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
+    const [activeTab, setActiveTab] = useState("Patient"); // Track active tab
     const [requestModalOpen, setRequestModalOpen] = useState(false); // Track modal open/close
-    const [firstName, setFirstName] = useState(""); // Track first name input
-    const [lastName, setLastName] = useState(""); // Track last name input
     const [email, setEmail] = useState(""); // Track email input
 
     // Sample patients data
@@ -43,15 +42,23 @@ const DoctorDashboard = () => {
 
     // Handle request submission for new patient
     const handleRequestSubmit = () => {
-        if (firstName.trim() && lastName.trim() && email.trim()) {
-            alert(`Request sent for new patient: ${firstName} ${lastName} (Email: ${email})`);
-            setFirstName(""); // Clear the inputs after submission
-            setLastName("");
-            setEmail(""); // Clear email input
+        if (email.trim()) {
+            alert(`Request sent for new patient with email: ${email}`);
+            setEmail(""); // Clear email input after submission
             setRequestModalOpen(false); // Close the modal
         } else {
-            alert("Please enter first name, last name, and email.");
+            alert("Please enter an email.");
         }
+    };
+
+    // Dummy data for tabs
+    const tabContent = {
+        Patient: "Patient Information: John Doe, 44 years old, Male.",
+        Condition: "Condition: Hypertension, Diabetes.",
+        Observation: "Observation: Blood Pressure 120/80, Heart Rate 72 bpm.",
+        MedicationRequest: "Medication: Metformin, Lisinopril.",
+        Procedure: "Procedure: Appendectomy performed on 2020-01-15.",
+        DocumentReference: "Documents: Surgery Report, Lab Results.",
     };
 
     return (
@@ -128,11 +135,25 @@ const DoctorDashboard = () => {
                                 />
                             </div>
 
-                            <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
-                                <h3 className="text-lg font-semibold text-gray-700 mb-2">Patient Summary</h3>
-                                <p className="text-gray-600">
-                                    Patient is a {selectedPatient.gender.toLowerCase()} with stable vitals. No new symptoms observed.
-                                </p>
+                            {/* Tabs */}
+                            <div className="mb-6">
+                                <div className="flex space-x-4">
+                                    {["Patient", "Condition", "Observation", "MedicationRequest", "Procedure", "DocumentReference"].map((tab) => (
+                                        <button
+                                            key={tab}
+                                            onClick={() => setActiveTab(tab)}
+                                            className={`px-4 py-2 rounded-lg ${activeTab === tab ? "bg-[#87CEEB] text-white" : "bg-white text-[#87CEEB] border border-[#87CEEB]"}`}
+                                        >
+                                            {tab}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Display Tab Content */}
+                                <div className="mt-4 p-4 bg-white rounded-lg shadow-md">
+                                    <h3 className="text-lg font-semibold">{activeTab} Information</h3>
+                                    <p className="text-gray-700 mt-2">{tabContent[activeTab]}</p>
+                                </div>
                             </div>
 
                             <div className="flex flex-col space-y-3 mb-6">
@@ -172,26 +193,6 @@ const DoctorDashboard = () => {
                 <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
                     <div className="bg-white p-6 rounded-lg shadow-lg w-1/3">
                         <h2 className="text-xl font-bold text-gray-700 mb-4">Request New Patient Data</h2>
-                        <div className="mb-4">
-                            <label className="block text-gray-700 mb-1">First Name</label>
-                            <input
-                                type="text"
-                                value={firstName}
-                                onChange={(e) => setFirstName(e.target.value)}
-                                placeholder="First Name"
-                                className="w-full p-2 border border-gray-300 rounded-lg"
-                            />
-                        </div>
-                        <div className="mb-4">
-                            <label className="block text-gray-700 mb-1">Last Name</label>
-                            <input
-                                type="text"
-                                value={lastName}
-                                onChange={(e) => setLastName(e.target.value)}
-                                placeholder="Last Name"
-                                className="w-full p-2 border border-gray-300 rounded-lg"
-                            />
-                        </div>
                         <div className="mb-4">
                             <label className="block text-gray-700 mb-1">Email</label>
                             <input
