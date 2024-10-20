@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const Schema = mongoose.Schema;
 
-const patientSchema = Schema({
+const doctorSchema = Schema({
     user_id: {
         type: Schema.Types.ObjectId,
         unique: false,
@@ -12,21 +12,11 @@ const patientSchema = Schema({
         type: String,
         required: true,
     },
-    age: Number,
-    gender: String,
-    fhirReference: {
-        type: Object,
-    },
-    medicalFiles: [
-        {
-            type: String,
-        },
-    ],
-    doctors: [
+    patients: [
         {
             type: Schema.Types.ObjectId,
         }
     ]
 });
 
-export const Patient = mongoose.model('Patient', patientSchema, 'Patient');
+export const Doctor = mongoose.model('Doctor', doctorSchema, 'Doctor');
