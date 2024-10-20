@@ -7,6 +7,7 @@ import dotenv from "dotenv";
 // require('dotenv').config();
 
 import medicalRouter from './routes/medicalData.js';
+import router from "./routes/authRoutes.js";
 
 dotenv.config();
 
@@ -15,6 +16,7 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Sample route
 app.get('/', (req, res) => {
@@ -22,6 +24,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/medicalData', medicalRouter);
+app.use('/', router);
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI)
