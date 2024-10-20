@@ -14,10 +14,9 @@ const PatientDashboard = ({ onUploadComplete }) => {
   ];
 
   const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedDoc, setSelectedDoc] = useState(null); // Track the selected document for preview
   const [documents, setDocuments] = useState([
-    { name: "Doc1.pdf", id: 1 },
-    { name: "Doc2.pdf", id: 2 },
-    { name: "Doc3.pdf", id: 3 },
+    { },
   ]);
 
   const [filter, setFilter] = useState("all");
@@ -32,7 +31,7 @@ const PatientDashboard = ({ onUploadComplete }) => {
 
   const handleUpload = () => {
     if (selectedFile) {
-      setDocuments([...documents, { name: selectedFile.name, id: documents.length + 1 }]);
+      setDocuments([...documents, { name: selectedFile.name, id: documents.length + 1, file: URL.createObjectURL(selectedFile) }]);
       setSelectedFile(null);
       if (onUploadComplete) {
         onUploadComplete();
@@ -42,6 +41,9 @@ const PatientDashboard = ({ onUploadComplete }) => {
 
   const handleDeleteDocument = (id) => {
     setDocuments(documents.filter((doc) => doc.id !== id));
+    if (selectedDoc && selectedDoc.id === id) {
+      setSelectedDoc(null); // Clear preview if deleted document was selected
+    }
   };
 
   const sendDoctorInfo = (email) => {
@@ -191,7 +193,11 @@ const PatientDashboard = ({ onUploadComplete }) => {
                   {doc.name}
                 </span>
                 <div className="flex flex-row gap-3">
-                  <img src={eyeImg} className="h-5 w-5 cursor-pointer" />
+                  <img
+                    src={eyeImg}
+                    className="h-5 w-5 cursor-pointer"
+                    onClick={() => setSelectedDoc(doc)} // Set selected document for preview
+                  />
                   <button
                     onClick={() => handleDeleteDocument(doc.id)}
                     className="text-red-500"
@@ -206,9 +212,9 @@ const PatientDashboard = ({ onUploadComplete }) => {
           <div className="p-4 col-span-3 rounded-2xl mt-4">
             <h3 className="text-lg font-bold mb-2">Document Preview</h3>
             <div className="border-2 border-dashed border-[#87CEEB] rounded-lg h-[350px] flex items-center justify-center">
-              {selectedFile ? (
+              {selectedDoc ? (
                 <iframe
-                  src={URL.createObjectURL(selectedFile)}
+                  src={selectedDoc.file} // Use the selected document file for preview
                   title="Document Preview"
                   className="w-full h-full"
                 />
