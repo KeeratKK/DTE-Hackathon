@@ -24,17 +24,6 @@ function App() {
           <>
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-<<<<<<< HEAD
-              
-            <Route path="/patient" element={<PatientDashboard />} />
-            <Route path="/doctor" element={<DoctorDashboard/>} />
-            </>
-            
-            }
-            
-         </Routes>
-      </>
-=======
           </>
         ) : (
           <>
@@ -45,7 +34,6 @@ function App() {
         )}
       </Routes>
     </>
->>>>>>> keerat-branch
   );
 }
 

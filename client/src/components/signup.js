@@ -30,7 +30,7 @@ export const Signup = () => {
         e.preventDefault();
         const {first_name, last_name, email, password, role} = data;
         try{
-            const {data} = await axios.post('http://localhost:5000/signup', {
+            const {data} = await axios.post('/signup', {
                 first_name, last_name, email, password, role
             });
             if(data.error){
@@ -38,7 +38,7 @@ export const Signup = () => {
             }else{
                 setData({})
                 toast.success('Signup Successful. Welcome!')
-                navigate('/calender');
+                navigate('/dashboard');
                 window.location.reload();
             }
         }catch (error){

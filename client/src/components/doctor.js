@@ -1,36 +1,47 @@
-import { useState } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import manImg from '../images/man.png';
 import womanImg from '../images/woman.png';
-import resume from '../images/RogehBeshayResume.pdf';
+import resume from '../images/resume.pdf';
+import axios from 'axios'
+import { UserContext } from './userContext';
+import { Link, useNavigate } from 'react-router-dom';
 
 const DoctorDashboard = () => {
     const [selectedPatient, setSelectedPatient] = useState(null);
     const [viewedDoc, setViewedDoc] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
-    const [activeTab, setActiveTab] = useState("Patient"); // Track active tab
-    const [requestModalOpen, setRequestModalOpen] = useState(false); // Track modal open/close
+    const [activeTab, setActiveTab] = useState("Patient");
+    const [requestModalOpen, setRequestModalOpen] = useState(false);
     const [email, setEmail] = useState(""); // Track email input
-
-    // Sample patients data
-    const patients = [
-        { id: 1, name: "John Doe", gender: "Male", birthday: "January 10, 1980" },
-        { id: 2, name: "Jane Smith", gender: "Female", birthday: "March 15, 1985" },
-        { id: 3, name: "Michael Johnson", gender: "Male", birthday: "July 22, 1970" },
-        { id: 4, name: "Emily Davis", gender: "Female", birthday: "April 10, 1992" },
-        { id: 5, name: "Charles Brown", gender: "Male", birthday: "November 1, 1965" }
-    ];
+    const [patients, setPatients] = useState([]); // State to store fetched patients
+    const {user} = useContext(UserContext)
 
     const documents = [
         { id: 1, name: "Surgery Report", file: resume },
-        { id: 2, name: "Lab Results", file: resume },
-        { id: 3, name: "Prescription History", file: resume },
     ];
+
+    // Fetch patient data from the API when the component mounts
+    useEffect(() => {
+        const fetchDoctorPatients = async () => {
+            try {
+                const response = await axios.get(`/doctor-patients?doctorId=${user.id}`);
+                setPatients(response.data);
+            } catch (error) {
+                console.error("Error fetching doctor's patients:", error);
+            }
+        };
+    
+        fetchDoctorPatients();
+    }, [user.id]);
+    
+
+    console.log(patients);
 
     const toggleDocument = (docId) => {
         setViewedDoc(viewedDoc === docId ? null : docId);
     };
 
-    // Filter the patients based on the search query (for the left panel)
+    // Filter the patients based on the search query
     const filteredPatients = patients.filter(patient =>
         patient.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -40,26 +51,55 @@ const DoctorDashboard = () => {
         setSearchQuery(e.target.value);
     };
 
+    console.log(user.id);
     // Handle request submission for new patient
-    const handleRequestSubmit = () => {
+    const handleRequestSubmit = async () => {
         if (email.trim()) {
-            alert(`Request sent for new patient with email: ${email}`);
-            setEmail(""); // Clear email input after submission
-            setRequestModalOpen(false); // Close the modal
+            try {
+                // Call API to request patient data based on email
+                await axios.post('/request-data', {
+                    email,
+                    doctorId: user.id // Replace with actual doctorId from session or context
+                });
+                alert(`Request sent for new patient with email: ${email}`);
+                setEmail(""); // Clear email input after submission
+                setRequestModalOpen(false); // Close the modal
+            } catch (error) {
+                console.error("Error submitting patient data request:", error);
+                alert("Error requesting patient data.");
+            }
         } else {
             alert("Please enter an email.");
         }
     };
 
-    // Dummy data for tabs
+    // Dummy data for tabs (replace with real data from API in the future)
     const tabContent = {
-        Patient: "Patient Information: John Doe, 44 years old, Male.",
+        Patient: selectedPatient ? `Patient Information: Pamela Rogers, 56 years old, Female.` : "",
         Condition: "Condition: Hypertension, Diabetes.",
         Observation: "Observation: Blood Pressure 120/80, Heart Rate 72 bpm.",
         MedicationRequest: "Medication: Metformin, Lisinopril.",
         Procedure: "Procedure: Appendectomy performed on 2020-01-15.",
         DocumentReference: "Documents: Surgery Report, Lab Results.",
     };
+
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+      const navigate = useNavigate();
+
+    const logoutUser = async () => {
+        try {
+            await axios.get('/logout', { withCredentials: true });
+            localStorage.removeItem('token');
+            setIsLoggedIn(false);
+            navigate('/');
+            await window.location.reload(false);
+        } catch (error) {
+            console.error('Logout failed', error);
+        }
+    };
+
+
+
 
     return (
         <div className="flex flex-col h-screen w-screen bg-gray-50">
@@ -78,7 +118,7 @@ const DoctorDashboard = () => {
                         Request Patient Data
                     </button>
                     {/* Logout Button */}
-                    <button className="bg-white text-[#87CEEB] font-bold px-4 py-2 rounded-lg hover:bg-gray-100 transition">
+                    <button onClick={logoutUser} className="bg-white text-[#87CEEB] font-bold px-4 py-2 rounded-lg hover:bg-gray-100 transition">
                         Logout
                     </button>
                 </div>
@@ -121,11 +161,11 @@ const DoctorDashboard = () => {
                         <div className="bg-gray-100 rounded-lg p-6 shadow-sm">
                             <div className="flex justify-between items-start mb-6">
                                 <div>
-                                    <h2 className="text-2xl font-bold text-gray-700 mb-2">
-                                        {selectedPatient.name}
+                                    <h2 className="text-5xl font-bold text-gray-700 mb-2">
+                                        Pamela Rogers
                                     </h2>
-                                    <p className="text-gray-600 mb-1">Gender: {selectedPatient.gender}</p>
-                                    <p className="text-gray-600">Birthday: {selectedPatient.birthday}</p>
+                                    <p className="text-gray-600 mb-1">Gender: Female</p>
+                                    <p className="text-gray-600">Birthday: 06/02/1984</p>
                                 </div>
 
                                 <img

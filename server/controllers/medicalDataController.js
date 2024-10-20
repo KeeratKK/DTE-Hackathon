@@ -2,13 +2,14 @@ import axios from "axios"; // Import axios for HTTP requests
 import { Patient } from "../models/patientModel.js";
 import { retrieverPromise } from "../utils/chain.js";
 import PdfParse from "pdf-parse/lib/pdf-parse.js";
-import { RunnablePassthrough, RunnableSequence } from "@langchain/core/runnables";
+import { RunnablePassthrough, RunnableSequence, RunnableLambda } from "@langchain/core/runnables";
 import { ChatOpenAI } from "@langchain/openai";
 import { formatDocumentsAsString } from "langchain/util/document";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { PromptTemplate } from "@langchain/core/prompts";
 import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import jsonlint from "jsonlint";
+import { Document } from "langchain/document";
 
 import streamToBuffer from "stream-to-buffer";
 
@@ -31,7 +32,7 @@ const fixJson = (jsonStr) => {
         .replace(/(\])(?=\s*})/g, '$1,'); // Add comma after ] if followed by }
 }
 
-const createPatient = async (req, res) => {
+export const createPatient = async (req, res) => {
     try {
         const { user_id, name, age, gender } = req.body;
 
@@ -83,6 +84,8 @@ const createPatient = async (req, res) => {
 
         console.log(typeof(pdfText));
 
+        const formatDocs = (docs) => docs.map((doc) => doc.pageContent);
+
         const retriever = await retrieverPromise;
 
         const model = new ChatOpenAI({});
@@ -98,7 +101,30 @@ const createPatient = async (req, res) => {
             \n-----\n
             Question: {question}`);
 
+        // const prompt = PromptTemplate.fromTemplate(`You are an expert in FHIR (Fast Healthcare Interoperability Resources) with extensive knowledge
+        //     of FHIR resource types and resource objects. Here is some relevant FHIR documentation:
+            
+        //     Context: {context}
+            
+        //     Your task is to answer the user's question based solely on the medical history provided below. The context is only a referenceto help
+        //     understand the FHIR resource type. Do not use the context to create or infer any data for the FHIR resource objects. All FHIR resource
+        //     objects should be generated exclusively from the medical history provided below.
+            
+        //     If any information requested in the question is not present in the medical history, do not make assumptions or provide speculative information.
+            
+        //     Please ensure the JSON is formatted correctly with commas so that another agent can easily parse the information. Do not surround each
+        //     JSON object with the word "json". Append an empty JSON object at the end of the response, and ensure there is no character after the last 
+        //     JSON object.
+            
+        //     Medical History: {history}
+        //     \n-----\n
+        //     Question: {question}`);
+        
+        const question = "Given the medical data above, generate FHIR resource json objects for the following FHIR resource types: Patient, Condition, Observation, MedicationRequest, Procedure, and DocumentReference. Separate each json object by exactly one new line character.";
 
+
+        // const retDocs = await retriever._getRelevantDocuments(question);
+        // console.log(retDocs);
         const chain = RunnableSequence.from([
             {
                 question: new RunnablePassthrough(),
@@ -108,8 +134,18 @@ const createPatient = async (req, res) => {
             model,
             new StringOutputParser(),
         ]);
-
-        const question = "Given the medical data above, generate FHIR resource json objects for the following FHIR resource types: Patient, Condition, Observation, MedicationRequest, Procedure, and DocumentReference. Separate each json object by exactly one new line character.";
+        
+        // const chain = RunnableSequence.from([
+        //     RunnableLambda.from((input) => input.question), // Extracts the question from input
+        //     {
+        //         context: retriever.pipe(formatDocumentsAsString), // Assuming formatDocs is set up to return a string
+        //         question: new RunnablePassthrough(), // Passes the question directly
+        //         history: new RunnablePassthrough(), // Adds history as a passthrough runnable
+        //     },
+        //     prompt,
+        //     model, // Your language model instance
+        //     new StringOutputParser(),
+        // ]);
 
         const answer = await chain.invoke({question: question, history: pdfText});
 
@@ -208,25 +244,23 @@ const createPatient = async (req, res) => {
     }
 };
 
-const getUrls = async (req, res) => {
+export const getPdfUrls = async (req, res) => {
 
     try {
 
         const { user_id } = req.body;
 
         const patient = await Patient.findOne({ user_id });
-        
-        if(!user) {
-            return res.status(400).json({ message: "User Not Found" });
+
+        if(!patient) {
+            return res.status(400).json({ message: "User not Found"});
         }
 
-        res.status(200).json(patient);
+        res.status(200).json(patient.medicalFiles);
 
     } catch (err) {
-        console.error("Error with getting urls:", err);
-        res.status(500).json({message: "Server Error"});
+        console.log("Error with getting URLS:", err);
+        res.status(500).json({ message: "Server error" });
     }
 
-};
-
-export default {createPatient, getUrls};
+}

@@ -1,6 +1,8 @@
     import User from '../models/userSchema.js';
     import { hashPassword, comparePasswords } from '../helpers/auth.js';
     import jwt from 'jsonwebtoken';
+import { Patient } from '../models/patientModel.js';
+import { Doctor } from '../models/doctorModel.js';
 
     export const test = (req, res) => {
         res.json('test is working');
@@ -37,6 +39,13 @@
                 password: hashedPassword,
                 role,
             });
+
+            if(role === 'Doctor'){
+                await Doctor.create({
+                    user_id: user._id,
+                    patients: []
+                });
+            }
 
             jwt.sign(
                 { email: user.email, id: user._id, first_name: user.first_name, last_name: user.last_name, role: user.role },

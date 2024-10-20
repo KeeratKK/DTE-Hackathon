@@ -1,90 +1,131 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { UserCircle, File, X } from 'lucide-react';
 import manImg from '../images/man.png';
 import trashLogo from '../images/trashLogo.png';
 import uploadLogo from '../images/upload.png';
 import eyeImg from '../images/eye.png';
-import Modal from './model'
+import Modal from './model';
 import { UserContext } from './userContext';
-import { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from "axios";
 
 const PatientDashboard = ({ onUploadComplete }) => {
 
-  const {user} = useContext(UserContext);
+    const { user } = useContext(UserContext);
 
-  console.log(user);
+    const [doctorsData, setDoctorsData] = useState([]); // Dynamically fetched doctors
+    const [filter, setFilter] = useState("all");
+    const [showModal, setShowModal] = useState(false);
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [selectedDoc, setSelectedDoc] = useState(null); 
+    const [documents, setDocuments] = useState([]);
 
-  const doctorsData = [
-    { name: "Dr. Smith", status: "accepted" },
-    { name: "Dr. Johnson", status: "pending" },
-    { name: "Dr. Williams", status: "accepted" },
-  ];
-
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [selectedDoc, setSelectedDoc] = useState(null); // Track the selected document for preview
-  const [documents, setDocuments] = useState([
-<<<<<<< HEAD
-    { },
-=======
-    // { name: "Doc1.pdf", id: 1 },
-    // { name: "Doc2.pdf", id: 2 },
-    // { name: "Doc3.pdf", id: 3 },
->>>>>>> keerat-branch
-  ]);
-
-  const [filter, setFilter] = useState("all");
-  const [showModal, setShowModal] = useState(false);
-
-  const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      setSelectedFile(file);
-    }
-  };
-
-  const handleUpload = async () => {
-    if (selectedFile) {
-      setDocuments([...documents, { name: selectedFile.name, id: documents.length + 1, file: URL.createObjectURL(selectedFile) }]);
-      setSelectedFile(null);
-      if (onUploadComplete) {
-        onUploadComplete();
+    // Fetch doctors data when component loads
+    useEffect(() => {
+        const fetchDoctors = async () => {
+          try {
+            const response = await axios.get(`/doctors/${user.id}`);
+            console.log(response.data.doctors)
+            setDoctorsData(response.data.doctors);
+          } catch (error) {
+            console.error("Error fetching doctors:", error);
+          }
+        };
+      
+        fetchDoctors();
+      }, [user.id]);
+      
+      
+      console.log(doctorsData);
+  
+    // Handle doctor decision (accept/reject)
+    const handleDoctorDecision = async (doctorId, decision) => {
+      try {
+        await axios.post('/update-doctor', {
+          patientId: user.id,
+          doctorId,
+          decision
+        });
+  
+        // Update the local state after the decision
+        if (decision.toLowerCase() === 'yes') {
+          setDoctorsData((prev) =>
+            prev.map((doc) =>
+              doc._id === doctorId ? { ...doc, status: 'accepted' } : doc
+            )
+          );
+        } else {
+          setDoctorsData((prev) => prev.filter((doc) => doc._id !== doctorId));
+        }
+        window.location.reload();
+      } catch (error) {
+        console.error('Error updating doctor decision:', error);
       }
-    }
+    };
+  
+    // Filter doctors based on status
+    const filteredDoctors = doctorsData.filter((doctor) => {
+      if (filter === "all") return true;
+      return doctor.status === filter;
+    });
 
-    const formData = new FormData();
-    formData.append("file", selectedFile);
-    formData.append("user_id", user.id);
-    formData.append("name", user.first_name + user.last_name);
+    // Handle document upload
+    const handleFileChange = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+          setSelectedFile(file);
+        }
+      };
+    
+    const handleUpload = async () => {
+        if (selectedFile) {
+          setDocuments([...documents, { name: selectedFile.name, id: documents.length + 1, file: URL.createObjectURL(selectedFile) }]);
+          setSelectedFile(null);
+          if (onUploadComplete) {
+            onUploadComplete();
+          }
+        }
+    
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+        formData.append("user_id", user.id);
+        formData.append("name", user.first_name + user.last_name);
+    
+        try {
+          await axios.post("/api/medicalData/", formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          });
+        } catch (err) {
+          console.error("Error uploading file:", err);
+        }
+    
+      };
+    
+    // Handle document deletion
+    const handleDeleteDocument = (id) => {
+        setDocuments(documents.filter((doc) => doc.id !== id));
+        if (selectedDoc && selectedDoc.id === id) {
+          setSelectedDoc(null); // Clear preview if deleted document was selected
+        }
+      };
 
-    try {
-      const response = await axios.post("/api/medicalData/", formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-    } catch (err) {
-      console.error("Error uploading file:", err);
-    }
+    // Handle logout
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const navigate = useNavigate();
 
-  };
-
-  const handleDeleteDocument = (id) => {
-    setDocuments(documents.filter((doc) => doc.id !== id));
-    if (selectedDoc && selectedDoc.id === id) {
-      setSelectedDoc(null); // Clear preview if deleted document was selected
-    }
-  };
-
-  const sendDoctorInfo = (email) => {
-    console.log("Sending info to:", email);
-    // You can add your logic for sending the email or doctor info here
-  };
-
-  const filteredDoctors = doctorsData.filter((doctor) => {
-    if (filter === "all") return true;
-    return doctor.status === filter;
-  });
+    const logoutUser = async () => {
+      try {
+          await axios.get('/logout', { withCredentials: true });
+          localStorage.removeItem('token');
+          setIsLoggedIn(false);
+          navigate('/');
+          await window.location.reload(false);
+      } catch (error) {
+          console.error('Logout failed', error);
+      }
+    };
 
   return (
     <div className="flex flex-row h-screen bg-[#87CEEB]">
@@ -97,17 +138,10 @@ const PatientDashboard = ({ onUploadComplete }) => {
             alt="Patient"
             className="w-48 h-48 object-cover rounded-full border-4 border-[#87CEEB] p-4"
           />
-          <h2 className="text-3xl font-bold text-white mt-4">Welcome Back, John Doe!</h2>
+          <h2 className="text-3xl font-bold text-white mt-4">
+            Welcome Back, {user.first_name} {user.last_name}!
+          </h2>
         </div>
-
-        {/* Divider */}
-
-        <button
-          className="text-4xl bg-white rounded-full pr-3 pl-3 hover:bg-gray-400 transition-colors"
-          onClick={() => setShowModal(true)}
-        >
-          +
-        </button>
 
         <div className="h-1 w-5/6 bg-gray-300 rounded-full mb-5 mt-5"></div>
 
@@ -118,25 +152,19 @@ const PatientDashboard = ({ onUploadComplete }) => {
           {/* Filter Buttons */}
           <div className="flex justify-center space-x-2 mb-2">
             <button
-              className={`px-3 py-1 rounded-lg text-sm border ${
-                filter === "all" ? "bg-gray-300" : "bg-white"
-              }`}
+              className={`px-3 py-1 rounded-lg text-sm border ${filter === "all" ? "bg-gray-300" : "bg-white"}`}
               onClick={() => setFilter("all")}
             >
               All
             </button>
             <button
-              className={`px-3 py-1 rounded-lg text-sm border ${
-                filter === "accepted" ? "bg-gray-300" : "bg-white"
-              }`}
+              className={`px-3 py-1 rounded-lg text-sm border ${filter === "accepted" ? "bg-gray-300" : "bg-white"}`}
               onClick={() => setFilter("accepted")}
             >
               Accepted
             </button>
             <button
-              className={`px-3 py-1 rounded-lg text-sm border ${
-                filter === "pending" ? "bg-gray-300" : "bg-white"
-              }`}
+              className={`px-3 py-1 rounded-lg text-sm border ${filter === "pending" ? "bg-gray-300" : "bg-white"}`}
               onClick={() => setFilter("pending")}
             >
               Pending
@@ -145,48 +173,59 @@ const PatientDashboard = ({ onUploadComplete }) => {
 
           {/* Doctors List */}
           <div className="overflow-y-auto h-[300px] px-2 w-full">
-            {filteredDoctors.map((doctor, index) => (
-              <div
-                key={index}
-                className="flex flex-col justify-between bg-white p-2 mb-1 rounded-lg shadow-sm w-[450px] h-auto"
-              >
-                <div className="flex justify-between items-center flex-row">
-                  <div className="flex flex-col">
-                    <div className="text-lg font-bold">{doctor.name}</div>
-                    {doctor.status === "pending" && (
-                      <p className="text-xs text-gray-500">
-                        Allow this doctor to view your medical records?
-                      </p>
-                    )}
-                  </div>
+  {filteredDoctors.map((doctor, index) => (
+    <div
+      key={index}
+      className="flex flex-col justify-between bg-white p-2 mb-1 rounded-lg shadow-sm w-[450px] h-auto"
+    >
+      <div className="flex justify-between items-center flex-row">
+        <div className="flex flex-col">
+          <div className="text-lg font-bold">{doctor.first_name} {doctor.last_name}</div>
+          {doctor.status === "pending" && (
+            <p className="text-xs text-gray-500">
+              Allow this doctor to view your medical records?
+            </p>
+          )}
+        </div>
 
-                  {doctor.status === "pending" && (
-                    <div className="flex space-x-2 items-center ml-auto">
-                      <button className="text-red-500 font-bold text-lg">X</button>
-                      <button className="text-green-500 font-bold text-lg">✓</button>
-                    </div>
-                  )}
-
-                  {doctor.status === "accepted" && (
-                    <button className="text-red-500">
-                      <img
-                        className="size-10 hover:bg-gray-300 rounded-full p-1"
-                        src={trashLogo}
-                      />
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
+        {/* Conditionally render buttons only if the doctor is pending */}
+        {doctor.status === "pending" && (
+          <div className="flex space-x-2 items-center ml-auto">
+            {/* X Button (Reject Doctor) */}
+            <button
+              className="text-red-500 font-bold text-lg"
+              onClick={() => handleDoctorDecision(doctor.user_id, 'no')}
+            >
+              X
+            </button>
+            {/* Checkmark Button (Accept Doctor) */}
+            <button
+              className="text-green-500 font-bold text-lg"
+              onClick={() => handleDoctorDecision(doctor.user_id, 'yes')}
+            >
+              ✓
+            </button>
           </div>
-          <button className="text-lg bg-white rounded-full p-2 pl-4 pr-4 hover:bg-gray-400 transition-colors absolute bottom-4">
+        )}
+
+        {/* Conditionally render a message if the doctor is accepted */}
+        {doctor.status === "accepted" && (
+          <div className="text-green-500 font-bold text-lg">
+            Doctor accepted
+          </div>
+        )}
+      </div>
+    </div>
+  ))}
+</div>
+
+
+          <button onClick={logoutUser} className="text-lg bg-white rounded-full p-2 pl-4 pr-4 hover:bg-gray-400 transition-colors absolute bottom-4">
             Sign Out
           </button>
         </div>
       </div>
 
-      {/* Modal for adding new doctor */}
-      <Modal showModal={showModal} closeModal={() => setShowModal(false)} sendEmail={sendDoctorInfo} />
 
       {/* Right Section: Documents */}
       <div className="flex flex-col w-2/3 bg-gray-100 p-4">

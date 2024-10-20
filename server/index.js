@@ -18,6 +18,7 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(express.json());
 app.use(cookieParser());
+app.use(express.urlencoded({extended: true}));
 
 // Sample route
 app.get('/', (req, res) => {

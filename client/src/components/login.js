@@ -25,7 +25,7 @@ export const Login = () => {
                 toast.error(responseData.error);
             } else {
                 toast.success("Successfully logged in");
-                navigate('/calender');
+                navigate('/dashboard');
                 window.location.reload();
             }
         } catch (error) {

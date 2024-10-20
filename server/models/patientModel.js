@@ -22,7 +22,12 @@ const patientSchema = Schema({
             type: String,
         },
     ],
-    doctors: [
+    pendingDoctors: [
+        {
+            type: Schema.Types.ObjectId,
+        }
+    ],
+    acceptedDoctors: [
         {
             type: Schema.Types.ObjectId,
         }
