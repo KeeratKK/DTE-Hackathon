@@ -10,7 +10,7 @@ const patientSchema = Schema({
     },
     name: {
         type: String,
-        required: true,
+        required: false,
     },
     age: Number,
     gender: String,
