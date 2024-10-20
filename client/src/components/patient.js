@@ -1,12 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { UserCircle, File, X } from 'lucide-react';
 import manImg from '../images/man.png';
 import trashLogo from '../images/trashLogo.png';
 import uploadLogo from '../images/upload.png';
 import eyeImg from '../images/eye.png';
 import Modal from './model'
+import { UserContext } from './userContext';
+import { useEffect } from 'react';
+import axios from "axios";
 
 const PatientDashboard = ({ onUploadComplete }) => {
+
+  const {user} = useContext(UserContext);
+
+  console.log(user);
+
   const doctorsData = [
     { name: "Dr. Smith", status: "accepted" },
     { name: "Dr. Johnson", status: "pending" },
@@ -16,7 +24,13 @@ const PatientDashboard = ({ onUploadComplete }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [selectedDoc, setSelectedDoc] = useState(null); // Track the selected document for preview
   const [documents, setDocuments] = useState([
+<<<<<<< HEAD
     { },
+=======
+    // { name: "Doc1.pdf", id: 1 },
+    // { name: "Doc2.pdf", id: 2 },
+    // { name: "Doc3.pdf", id: 3 },
+>>>>>>> keerat-branch
   ]);
 
   const [filter, setFilter] = useState("all");
@@ -29,7 +43,7 @@ const PatientDashboard = ({ onUploadComplete }) => {
     }
   };
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (selectedFile) {
       setDocuments([...documents, { name: selectedFile.name, id: documents.length + 1, file: URL.createObjectURL(selectedFile) }]);
       setSelectedFile(null);
@@ -37,6 +51,22 @@ const PatientDashboard = ({ onUploadComplete }) => {
         onUploadComplete();
       }
     }
+
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+    formData.append("user_id", user.id);
+    formData.append("name", user.first_name + user.last_name);
+
+    try {
+      const response = await axios.post("/api/medicalData/", formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+    } catch (err) {
+      console.error("Error uploading file:", err);
+    }
+
   };
 
   const handleDeleteDocument = (id) => {

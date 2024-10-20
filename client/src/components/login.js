@@ -16,11 +16,11 @@ export const Login = () => {
     const loginUser = async (e) => {
         e.preventDefault();
         const { email, password } = data;
-    
+
         try {
-            const response = await axios.post('/login', { email, password }, { withCredentials: true });
+            const response = await axios.post('http://localhost:5000/login', { email, password }, { withCredentials: true });
             const responseData = response.data;
-    
+
             if (responseData.error) {
                 toast.error(responseData.error);
             } else {

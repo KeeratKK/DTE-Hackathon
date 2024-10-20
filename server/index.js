@@ -1,13 +1,14 @@
 import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
 
 // const express = require('express');
 // const mongoose = require('mongoose');
 // require('dotenv').config();
 
 import medicalRouter from './routes/medicalData.js';
-import router from "./routes/authRoutes.js";
+import router from './routes/authRoutes.js'
 
 dotenv.config();
 
@@ -16,7 +17,7 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // Sample route
 app.get('/', (req, res) => {
