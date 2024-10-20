@@ -36,6 +36,6 @@ const upload = multer({
 
 });
 
-medicalRouter.post('/', upload.single('test'), createPatient);
+medicalRouter.post('/', upload.single('file'), createPatient);
 
 export default medicalRouter;

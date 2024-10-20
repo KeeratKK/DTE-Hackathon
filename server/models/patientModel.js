@@ -5,12 +5,12 @@ const Schema = mongoose.Schema;
 const patientSchema = Schema({
     user_id: {
         type: Schema.Types.ObjectId,
-        unique: true,
+        unique: false,
         required: true,
     },
     name: {
         type: String,
-        required: true,
+        required: false,
     },
     age: Number,
     gender: String,
@@ -22,6 +22,11 @@ const patientSchema = Schema({
             type: String,
         },
     ],
+    doctors: [
+        {
+            type: Schema.Types.ObjectId,
+        }
+    ]
 });
 
 export const Patient = mongoose.model('Patient', patientSchema, 'Patient');

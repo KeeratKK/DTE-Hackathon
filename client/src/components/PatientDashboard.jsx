@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import NavBar from './NavBar';
 import FileUpload from './FileUpload';
 import DocumentList from './DocumentList';
 import DocumentViewer from './DocumentViewer';
+import { UserContext } from './userContext';
 
 const predefinedTags = ['Immunizations', 'Lab Results', 'Allergies', 'Prescriptions', 'Surgical History'];
 
@@ -12,6 +13,9 @@ const PatientDashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState(''); // Track selected tag when uploading
 
+  const {user} = useContext(UserContext);
+
+  console.log(user);
   // Doctor requests for data access
   const [requests, setRequests] = useState([
     { doctorName: 'Dr. Smith', requestId: 1 },
@@ -73,6 +77,8 @@ const PatientDashboard = () => {
     doc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     doc.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
   );
+
+
 
   return (
     <>
