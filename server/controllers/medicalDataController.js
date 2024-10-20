@@ -8,6 +8,7 @@ import { formatDocumentsAsString } from "langchain/util/document";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { PromptTemplate } from "@langchain/core/prompts";
 import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import jsonlint from "jsonlint";
 
 import streamToBuffer from "stream-to-buffer";
 
@@ -18,6 +19,17 @@ const s3 = new S3Client({
         secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
     },
 });
+
+const fixJson = (jsonStr) => {
+
+    return jsonStr
+        .replace(/([{,])([^"{}\[\],\s]+)/g, '$1"$2"') // Add quotes around keys
+        .replace(/([:])([^"{}\[\],\s]+)/g, '$1"$2"') // Add quotes around values
+        .replace(/(\s*:\s*"(.*?)\s*")/, ': "$2"') // Clean up whitespace in quotes
+        .replace(/([,]\s*?)(?=\{)/g, '') // Remove trailing commas
+        .replace(/([}|\]])(?=\s*[{])/g, '$1,') // Add commas after } or ] if followed by {
+        .replace(/(\])(?=\s*})/g, '$1,'); // Add comma after ] if followed by }
+}
 
 const createPatient = async (req, res) => {
     try {
@@ -73,14 +85,14 @@ const createPatient = async (req, res) => {
 
         const retriever = await retrieverPromise;
 
-        const model = new ChatOpenAI({ model: 'gpt-4' });
+        const model = new ChatOpenAI({});
         
-        const prompt = PromptTemplate.fromTemplate(`You are an expert in FHIR (Fast Healthcare Interoperability Resources) who knows
-            a lot about FHIR resource types and resource objects. Answer the user's question based on the following context and user's
-            medical history:
+        const prompt = PromptTemplate.fromTemplate(`You are an expert in FHIR (Fast Healthcare Interoperability Resources) with extensive knowledge of FHIR resource types and resource objects. Your task is to answer the user's question based solely on the user's medical history provided below. 
 
-            \n-----\n
-            Context: {context}
+            If any information requested in the question is not present in the medical history, do not make assumptions or provide speculative information. 
+
+            Please prioritize accuracy in your response and ensure the json is formatted properly with commas so that another agent can easily parse the information. Do not surround each json object with the words json. Append an empty json object at the end of the response and Ensure there is no character after the last json object.
+
             \n-----\n
             Medical History: {history}
             \n-----\n
@@ -89,9 +101,8 @@ const createPatient = async (req, res) => {
 
         const chain = RunnableSequence.from([
             {
-                context: retriever.pipe(formatDocumentsAsString),
-                history: new RunnablePassthrough(),
                 question: new RunnablePassthrough(),
+                history: new RunnablePassthrough(),
             },
             prompt,
             model,
@@ -103,6 +114,52 @@ const createPatient = async (req, res) => {
         const answer = await chain.invoke({question: question, history: pdfText});
 
         console.log(answer);
+
+        const jsonObjects = answer
+            .trim() // Remove leading/trailing whitespace
+            .split(/}\s*(?=\{)/g) // Split by closing brace followed by an opening brace
+            .map(json => json.trim() + '}') // Ensure each piece ends with a closing brace
+            .filter(obj => obj); // Filter out any empty strings
+
+        // Parse each matched JSON string into a JSON object
+        let counter = 1;
+        const parsedObjects = jsonObjects.map(jsonStr => {
+
+            if(counter === 7) return null;
+
+            try {
+                counter++;
+                return JSON.parse(jsonStr);
+            } catch (error) {
+                console.error("Failed to parse JSON:", jsonStr, error);
+                return null; // Return null for failed parses
+            }
+        }).filter(obj => obj !== null); // Filter out any null entries
+
+        console.log(parsedObjects);
+
+        console.log('https://hapi.fhir.org/baseR4/' + parsedObjects[1]['resourceType']);
+
+        const fhirReferences = [];
+
+        const endings = ['https://hapi.fhir.org/baseR4/Patient', 'https://hapi.fhir.org/baseR4/Condition', 'https://hapi.fhir.org/baseR4/Observation', 
+            'https://hapi.fhir.org/baseR4/MedicationRequest', 'https://hapi.fhir.org/baseR4/Procedure', 'https://hapi.fhir.org/baseR4/DocumentReference'];
+
+        const patientResponse = await axios.post(endings[0], parsedObjects[0]);
+        const patientId = patientResponse.data.id;
+
+        for(let i = 1; i < 6; i++) {
+            parsedObjects[i]['subject']['reference'] = `Patient/${patientId}`;
+        }
+
+        fhirReferences.push(patientResponse);
+
+        for(let i = 1; i < 6; i++) {
+            const fhirResponse = await axios.post(endings[i], parsedObjects[i]);
+            fhirReferences.push(fhirResponse);
+        }
+
+        // res.status(200).json(answer);
 
         // // Create the FHIR Patient resource
         // const fhirPatient = {
@@ -120,18 +177,30 @@ const createPatient = async (req, res) => {
         // // Send a POST request to create the patient in the FHIR server
         // const fhirResponse = await axios.post('https://hapi.fhir.org/baseR4/Patient', fhirPatient);
 
+        const tempFhir = fhirReferences.map(ref => ref.data);
+
         // // Create the MongoDB patient document
-        // const newPatient = await Patient.create({
-        //     user_id,
-        //     name,
-        //     age,
-        //     gender,
-        //     fhirReference: fhirResponse.data, // Store FHIR resource details (e.g., ID)
-        //     medicalFiles: [req.file.location] // Assuming req.file contains file info
-        // });
+        const newPatient = await Patient.create({
+            user_id,
+            name,
+            age,
+            gender,
+            fhirReference: tempFhir, // Store FHIR resource details (e.g., ID)
+            medicalFiles: [req.file.location] // Assuming req.file contains file info
+        });
+
+        // for(let i = 1; i < 6; i++) {
+        //     await Patient.create({
+        //         user_id,
+        //         name,
+        //         fhirReference: fhirReferences[i].data,
+        //         medicalFiles: [req.file.location]
+        //     });
+        //     console.log(`${i}hi`);
+        // }
 
         // // Send the newly created patient as a response
-        // res.status(200).json(newPatient);
+        res.status(200).json(newPatient);
 
     } catch (err) {
         console.error("Error with the FHIR request:", err.response ? err.response.data : err.message); // Log more details

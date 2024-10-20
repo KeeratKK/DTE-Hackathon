@@ -21,6 +21,7 @@
     "express": "^4.21.1",
     "fhir.js": "^0.0.22",
     "fhirclient": "^2.5.4",
+    "jsonlint": "^1.6.3",
     "langchain": "^0.3.2",
     "mongodb": "^6.9.0",
     "mongoose": "^8.7.2",
