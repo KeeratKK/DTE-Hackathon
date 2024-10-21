@@ -15,8 +15,6 @@ import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
 import { ChatMessageHistory } from "langchain/memory";
 import { createRetrievalChain } from "langchain/chains/retrieval";
 
-process.env.OPENAI_API_KEY = "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";
-process.env.ATLAS_CONNECTION_STRING = "mongodb+srv://rogehbeshay258:DBxzyXuL7AqrmUYu@cluster0.cqeiv.mongodb.net/Cluster0";
 const client = new MongoClient(process.env.ATLAS_CONNECTION_STRING);
 
 async function run() {
